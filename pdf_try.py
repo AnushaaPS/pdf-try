@@ -4,6 +4,8 @@ from docx.shared import Pt
 from docx.oxml import parse_xml
 from docx.oxml.ns import nsdecls
 from io import BytesIO
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
 from weasyprint import HTML
 
 # Function to format student names and register numbers dynamically
@@ -79,11 +81,20 @@ def fill_project_report(details, template):
     return output
 
 # Function to convert DOCX to PDF using WeasyPrint
-def convert_docx_to_pdf(docx_content):
-    docx_text = Document(BytesIO(docx_content))
-    html_content = "".join([f"<p>{p.text}</p>" for p in docx_text.paragraphs])
+def convert_docx_to_pdf(docx_output):
+    doc = Document(BytesIO(docx_output))
     pdf_output = BytesIO()
-    HTML(string=html_content).write_pdf(pdf_output)
+    c = canvas.Canvas(pdf_output, pagesize=letter)
+    c.setFont("Times-Roman", 12)
+    y_position = 750
+    for para in doc.paragraphs:
+        if y_position < 50:
+            c.showPage()
+            c.setFont("Times-Roman", 12)
+            y_position = 750
+        c.drawString(100, y_position, para.text)
+        y_position -= 20
+    c.save()
     return pdf_output.getvalue()
 
 # Streamlit UI

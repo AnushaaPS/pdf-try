@@ -5,3 +5,4 @@ wkhtmltopdf
 xvfbwrapper
 weasyprint
 reportlab
+pypandoc

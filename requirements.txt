@@ -1,3 +1,4 @@
 python-docx
 pdfkit
 streamlit
+wkhtmltopdf

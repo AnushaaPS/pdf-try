@@ -4,3 +4,4 @@ streamlit
 wkhtmltopdf
 xvfbwrapper
 weasyprint
+reportlab

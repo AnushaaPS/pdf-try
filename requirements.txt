@@ -3,3 +3,4 @@ pdfkit
 streamlit
 wkhtmltopdf
 xvfbwrapper
+weasyprint

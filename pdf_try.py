@@ -6,7 +6,6 @@ from docx.oxml.ns import nsdecls
 from io import BytesIO
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
-from weasyprint import HTML
 
 # Function to format student names and register numbers dynamically
 def format_students(students):

@@ -2,3 +2,4 @@ python-docx
 pdfkit
 streamlit
 wkhtmltopdf
+xvfbwrapper

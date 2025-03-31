@@ -8,7 +8,7 @@ import pdfkit  # For converting HTML to PDF
 import os
 
 # Ensure wkhtmltopdf is installed
-PDFKIT_CONFIG = pdfkit.configuration(wkhtmltopdf='/usr/bin/wkhtmltopdf')
+PDFKIT_CONFIG = pdfkit.configuration(wkhtmltopdf='C:\Program Files\wkhtmltopdf')
 
 def format_students(students):
     students = [f"{name.strip()} {reg.strip()}" for name, reg in students if name.strip() and reg.strip()]

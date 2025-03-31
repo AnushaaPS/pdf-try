@@ -4,12 +4,12 @@ from docx.shared import Pt
 from docx.oxml import parse_xml
 from docx.oxml.ns import nsdecls
 from io import BytesIO
-from reportlab.lib.pagesizes import letter
-from reportlab.pdfgen import canvas
+import pypandoc
 
 # Function to format student names and register numbers dynamically
 def format_students(students):
     students = [f"{name.strip()} {reg.strip()}" for name, reg in students if name.strip() and reg.strip()]
+    
     if len(students) == 1:
         return students[0]
     elif len(students) == 2:
@@ -28,7 +28,8 @@ def set_line_spacing(paragraph):
 # Function to fill project report
 def fill_project_report(details, template):
     doc = Document(template)  # Load the selected template file
-        # Define font sizes
+    
+    # Define font sizes
     font_sizes = {
         "<PROJECT_NAME>": 18,
         "<STUDENT_DETAILS>": 14,
@@ -50,14 +51,17 @@ def fill_project_report(details, template):
         "<INDUSTRY_PERSON_POSITION>": 14,
         "<INDUSTRY_PERSON_PRONOUN>": 14,
     }
+
+    # Replace placeholders in paragraphs and apply 1.5 line spacing
     for i, para in enumerate(doc.paragraphs):
         for key, value in details.items():
             if key in para.text:
                 para.text = para.text.replace(key, value.strip())
                 for run in para.runs:
                     run.font.name = "Times New Roman"
-                    run.font.size = Pt(14)
-        set_line_spacing(para)
+                    run.font.size = Pt(font_sizes.get(key, 14))
+        set_line_spacing(para)  # Apply 1.5 line spacing
+        
         # Remove empty paragraphs on the first page
         if i < 10 and para.text.strip() == "":
             p = para._element
@@ -75,26 +79,19 @@ def fill_project_report(details, template):
                                 run.font.name = "Times New Roman"
                                 run.font.size = Pt(font_sizes.get(key, 14))
 
+    # Save the modified document
     output = BytesIO()
     doc.save(output)
     return output
 
-# Function to convert DOCX to PDF using WeasyPrint
-def convert_docx_to_pdf(docx_output):
-    doc = Document(BytesIO(docx_output))
-    pdf_output = BytesIO()
-    c = canvas.Canvas(pdf_output, pagesize=letter)
-    c.setFont("Times-Roman", 12)
-    y_position = 750
-    for para in doc.paragraphs:
-        if y_position < 50:
-            c.showPage()
-            c.setFont("Times-Roman", 12)
-            y_position = 750
-        c.drawString(100, y_position, para.text)
-        y_position -= 20
-    c.save()
-    return pdf_output.getvalue()
+# Function to convert DOCX to PDF using pypandoc
+def convert_docx_to_pdf_pypandoc(docx_path, pdf_path):
+    try:
+        pypandoc.convert_file(docx_path, 'pdf', outputfile=pdf_path)
+        return True
+    except Exception as e:
+        st.error(f"An error occurred during the conversion: {e}")
+        return False
 
 # Streamlit UI
 st.title("Project Report Generator")
@@ -111,13 +108,13 @@ with st.form("project_form"):
     student_4 = st.text_input("Student 4 Name (Optional)", "")
     reg_no_4 = st.text_input("Register Number 4 (Optional)", "")
     degree = st.selectbox("Degree", ["BACHELOR OF ENGINEERING", "BACHELOR OF TECHNOLOGY"])
-    department = st.selectbox("Department", ["COMPUTER SCIENCE AND ENGINEERING", "ARTIFICIAL INTELLIGENCE AND DATA SCIENCE", "INFORMATION TECHNOLOGY", "ELECTRONICS AND COMMUNICATION ENGINEERING","ELECTRICAL AND ELECTRONICS ENGINEERING","BIO-TECHNOLOGY", "MECHANICAL ENGINEERING","MECHATRONICS ENGINEERING", "CIVIL ENGINEERING"])
+    department = st.selectbox("Department", ["COMPUTER SCIENCE AND ENGINEERING", "ARTIFICIAL INTELLIGENCE AND DATA SCIENCE", "INFORMATION TECHNOLOGY", "ELECTRONICS AND COMMUNICATION ENGINEERING", "ELECTRICAL AND ELECTRONICS ENGINEERING", "BIO-TECHNOLOGY", "MECHANICAL ENGINEERING", "MECHATRONICS ENGINEERING", "CIVIL ENGINEERING"])
     hod_name = st.text_input("HoD Name", "")
     hod_gender = st.radio("HoD Gender", ["Male", "Female"])
     supervisor_name = st.text_input("Supervisor Name", "")
     supervisor_gender = st.radio("Supervisor Gender", ["Male", "Female"])
     supervisor_designation = st.selectbox("Supervisor Designation", ["Assistant Professor", "Associate Professor", "Professor"])
-    department_hod_supervisor = st.selectbox("Department of HoD & Supervisor", ["Computer Science and Engineering", "Artificial Intelligence And Data Science", "Information Technology", "Electronics And Communication Engineering","Electrical And Electronics Engineering","Bio-Technology", "Mechanical Engineering","Mechatronics Engineering", "Civil Engineering"])
+    department_hod_supervisor = st.selectbox("Department of HoD & Supervisor", ["Computer Science and Engineering", "Artificial Intelligence And Data Science", "Information Technology", "Electronics And Communication Engineering", "Electrical And Electronics Engineering", "Bio-Technology", "Mechanical Engineering", "Mechatronics Engineering", "Civil Engineering"])
     
     if project_type == "External Project":
         industry_name = st.text_input("Industry Name", "")
@@ -134,9 +131,9 @@ if submitted:
         (student_3, reg_no_3),
         (student_4, reg_no_4)
     ]
-
+    
     formatted_students = format_students(students_list)
-
+    
     details = {
         "<PROJECT_NAME>": project_name,
         "<STUDENT_DETAILS>": formatted_students,
@@ -167,8 +164,23 @@ if submitted:
         })
     
     template = "UG Internal Project.docx" if project_type == "Internal Project" else "UG External Project.docx"
+    # Generate Word report
     word_output = fill_project_report(details, template)
-    pdf_output = convert_docx_to_pdf(word_output.getvalue())
     
-    st.download_button("Download Report (DOCX)", word_output.getvalue(), "Project_Report.docx")
-    st.download_button("Download Report (PDF)", pdf_output, "Project_Report.pdf")
+    # Save DOCX file locally for conversion
+    docx_path = "Project_Report.docx"
+    pdf_path = "Project_Report.pdf"
+    with open(docx_path, "wb") as f:
+        f.write(word_output.getvalue())
+    
+    # Convert DOCX to PDF
+    conversion_success = convert_docx_to_pdf_pypandoc(docx_path, pdf_path)
+    
+    if conversion_success:
+        # Load PDF file for download
+        with open(pdf_path, "rb") as f:
+            pdf_data = f.read()
+
+        # Download buttons
+        st.download_button("Download Report (DOCX)", word_output.getvalue(), "Project_Report.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+        st.download_button("Download Report (PDF)", pdf_data, "
